@@ -1,11 +1,266 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Meu Aplicativo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Dinâmico</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: var(--primary);
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 20px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: 600;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        th {
+            background-color: #f1f5f9;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgb(0 0 0 / 0.05);
+            border-left: 5px solid var(--primary);
+        }
+        .kpi-title { font-size: 13px; color: #64748b; }
+        .kpi-value { font-size: 20px; font-weight: bold; margin-top: 5px; }
+    </style>
 </head>
 <body>
-    <h1>Controle Financeiro</h1>
-    <p>O meu aplicativo está a funcionar!</p>
+
+<div class="container">
+    <h1>Controle Financeiro Dinâmico</h1>
+    
+    <!-- PAINEL DE LANÇAMENTO -->
+    <div class="card">
+        <h2>Novo Lançamento</h2>
+        <div class="form-grid">
+            <div>
+                <label>Data</label>
+                <input type="date" id="data">
+            </div>
+            <div>
+                <label>Conta / Origem / Destino</label>
+                <select id="conta">
+                    <option value="Cartão PJ Nubank">Cartão PJ Nubank</option>
+                    <option value="Conta Corrente PJ Nubank">Conta Corrente PJ Nubank</option>
+                    <option value="Conta Corrente PF Banco ITI">Conta Corrente PF Banco ITI</option>
+                    <option value="Cartão PF Banco Iti">Cartão PF Banco Iti</option>
+                    <option value="Conta Itaú PF">Conta Itaú PF</option>
+                    <option value="Dinheiro Entrada">Dinheiro Entrada</option>
+                    <option value="Dinheiro Saída">Dinheiro Saída</option>
+                </select>
+            </div>
+            <div>
+                <label>Tipo de Movimento</label>
+                <select id="tipo">
+                    <option value="Entrada">Entrada / Receita</option>
+                    <option value="Saída">Saída / Despesa</option>
+                    <option value="Pagamento de Fatura (Transferência)">Pag. Fatura (Não duplica despesa)</option>
+                </select>
+            </div>
+            <div>
+                <label>Valor (R$)</label>
+                <input type="number" id="valor" step="0.01" placeholder="0.00">
+            </div>
+            <div>
+                <label>Descrição</label>
+                <input type="text" id="descricao" placeholder="Ex: Fornecedor, Venda...">
+            </div>
+        </div>
+        <button onclick="adicionarMovimento()">Adicionar Lançamento</button>
+    </div>
+
+    <!-- RESUMO / KPIS -->
+    <div class="dashboard-grid" id="kpis">
+        <!-- Preenchido via JS -->
+    </div>
+
+    <!-- RELATÓRIO / TABELA GERAL -->
+    <div class="card">
+        <h2>Relatório de Movimentação Geral</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Conta</th>
+                    <th>Tipo</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tfoot id="tabela-corpo">
+                <!-- Preenchido via JS -->
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<script>
+    let transacoes = JSON.parse(localStorage.getItem('transacoes')) || [];
+
+    document.getElementById('data').valueAsDate = new Date();
+
+    function adicionarMovimento() {
+        const data = document.getElementById('data').value;
+        const conta = document.getElementById('conta').value;
+        const tipo = document.getElementById('tipo').value;
+        const valor = parseFloat(document.getElementById('valor').value);
+        const descricao = document.getElementById('descricao').value;
+
+        if (!data || isNaN(valor) || !descricao) {
+            alert('Por favor, preencha todos os campos corretamente.');
+            return;
+        }
+
+        const novaTransacao = { id: Date.now(), data, conta, tipo, valor, descricao };
+        transacoes.push(novaTransacao);
+        salvarEAtualizar();
+        
+        document.getElementById('valor').value = '';
+        document.getElementById('descricao').value = '';
+    }
+
+    function excluirTransacao(id) {
+        transacoes = transacoes.filter(t => t.id !== id);
+        salvarEAtualizar();
+    }
+
+    function salvarEAtualizar() {
+        localStorage.setItem('transacoes', JSON.stringify(transacoes));
+        renderizar();
+    }
+
+    function renderizar() {
+        const corpo = document.getElementById('tabela-corpo');
+        corpo.innerHTML = '';
+        
+        let saldos = {
+            "Cartão PJ Nubank": 0,
+            "Conta Corrente PJ Nubank": 0,
+            "Conta Corrente PF Banco ITI": 0,
+            "Cartão PF Banco Iti": 0,
+            "Conta Itaú PF": 0,
+            "Dinheiro Entrada": 0,
+            "Dinheiro Saída": 0
+        };
+
+        transacoes.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+        transacoes.forEach(t => {
+            // Lógica de cálculo sem conflito de cartão
+            if (t.tipo === 'Entrada') {
+                saldos[t.conta] += t.valor;
+            } else if (t.tipo === 'Saída') {
+                saldos[t.conta] -= t.valor;
+            } else if (t.tipo === 'Pagamento de Fatura (Transferência)') {
+                // Pagamento de fatura reduz a conta corrente e quita o cartão sem gerar nova despesa
+                saldos[t.conta] -= t.valor;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${t.data.split('-').reverse().join('/')}</td>
+                <td><strong>${t.conta}</strong></td>
+                <td>${t.tipo}</td>
+                <td>${t.descricao}</td>
+                <td style="color: ${t.tipo === 'Entrada' ? 'var(--success)' : 'var(--danger)'}">
+                    R$ ${t.valor.toFixed(2)}
+                </td>
+                <td><button style="background-color: var(--danger); padding: 5px 10px; font-size: 12px;" onclick="excluirTransacao(${t.id})">Excluir</button></td>
+            `;
+            corpo.appendChild(tr);
+        });
+
+        // Renderizar KPIs por conta
+        const kpisDiv = document.getElementById('kpis');
+        kpisDiv.innerHTML = '';
+        for (const [conta, saldo] of Object.entries(saldos)) {
+            kpisDiv.innerHTML += `
+                <div class="kpi-card">
+                    <div class="kpi-title">${conta}</div>
+                    <div class="kpi-value" style="color: ${saldo >= 0 ? 'var(--text)' : 'var(--danger)'}">
+                        R$ ${saldo.toFixed(2)}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    renderizar();
+</script>
+
 </body>
 </html>
