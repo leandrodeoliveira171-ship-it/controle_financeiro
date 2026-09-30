@@ -136,7 +136,6 @@
             </div>
             <div>
                 <label>Valor (R$) [Use negativo para saída]</label>
-                <!-- Alterado para type="text" com inputmode="decimal" para forçar o teclado a mostrar símbolos de menos e números perfeitamente -->
                 <input type="text" inputmode="decimal" id="valor" placeholder="Ex: 150.00 ou -50.00">
             </div>
             <div>
@@ -214,9 +213,8 @@
         const data = document.getElementById('data').value;
         const conta = document.getElementById('conta').value;
         
-        // Substitui vírgula por ponto para aceitar o formato brasileiro e converte para número
-        let valorTexto = document.getElementById('valor'].value.replace(',', '.');
-        const valor = parseFloat(valorTexto);
+        let valorBruto = document.getElementById('valor').value.trim().replace(',', '.');
+        const valor = parseFloat(valorBruto);
 
         const descricao = document.getElementById('descricao').value;
 
