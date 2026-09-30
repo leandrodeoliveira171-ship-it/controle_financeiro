@@ -185,8 +185,18 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="3" style="text-align: right;">Total do Período:</td>
-                    <td id="tabela-total" style="font-size: 16px;">R$ 0.00</td>
+                    <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
+                    <td id="tabela-total-entradas" style="font-size: 15px; color: var(--success);">R$ 0.00</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="text-align: right;">Total Saídas do Período:</td>
+                    <td id="tabela-total-saidas" style="font-size: 15px; color: var(--danger);">R$ 0.00</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="text-align: right;">Saldo Líquido do Período:</td>
+                    <td id="tabela-total-liquido" style="font-size: 16px;">R$ 0.00</td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -268,10 +278,15 @@
 
         transacoesFiltradas.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-        let somaTotalPeriodo = 0;
+        let totalEntradasPeriodo = 0;
+        let totalSaidasPeriodo = 0;
 
         transacoesFiltradas.forEach(t => {
-            somaTotalPeriodo += t.valor;
+            if (t.valor >= 0) {
+                totalEntradasPeriodo += t.valor;
+            } else {
+                totalSaidasPeriodo += t.valor; // Já é negativo, soma direto ou acumula
+            }
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -286,10 +301,15 @@
             corpo.appendChild(tr);
         });
 
-        // Atualizar totalizador no rodapé
-        const totalEl = document.getElementById('tabela-total');
-        totalEl.innerText = `R$ ${somaTotalPeriodo.toFixed(2)}`;
-        totalEl.style.color = somaTotalPeriodo >= 0 ? 'var(--success)' : 'var(--danger)';
+        const liquidoPeriodo = totalEntradasPeriodo + totalSaidasPeriodo;
+
+        // Atualizar totalizadores no rodapé
+        document.getElementById('tabela-total-entradas').innerText = `R$ ${totalEntradasPeriodo.toFixed(2)}`;
+        document.getElementById('tabela-total-saidas').innerText = `R$ ${totalSaidasPeriodo.toFixed(2)}`;
+        
+        const liquidoEl = document.getElementById('tabela-total-liquido');
+        liquidoEl.innerText = `R$ ${liquidoPeriodo.toFixed(2)}`;
+        liquidoEl.style.color = liquidoPeriodo >= 0 ? 'var(--success)' : 'var(--danger)';
 
         // Renderizar KPIs por conta
         const kpisDiv = document.getElementById('kpis');
