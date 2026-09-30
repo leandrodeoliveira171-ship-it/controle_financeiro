@@ -80,6 +80,10 @@
         th {
             background-color: #f1f5f9;
         }
+        tfoot tr {
+            background-color: #f8fafc;
+            font-weight: bold;
+        }
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -95,6 +99,15 @@
         }
         .kpi-title { font-size: 13px; color: #64748b; }
         .kpi-value { font-size: 20px; font-weight: bold; margin-top: 5px; }
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            margin-bottom: 15px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -123,16 +136,8 @@
                 </select>
             </div>
             <div>
-                <label>Tipo de Movimento</label>
-                <select id="tipo">
-                    <option value="Entrada">Entrada / Receita</option>
-                    <option value="Saída">Saída / Despesa</option>
-                    <option value="Pagamento de Fatura (Transferência)">Pag. Fatura (Não duplica despesa)</option>
-                </select>
-            </div>
-            <div>
-                <label>Valor (R$)</label>
-                <input type="number" id="valor" step="0.01" placeholder="0.00">
+                <label>Valor (R$) [Use negativo para saída]</label>
+                <input type="number" id="valor" step="0.01" placeholder="Ex: 150.00 ou -50.00">
             </div>
             <div>
                 <label>Descrição</label>
@@ -150,19 +155,41 @@
     <!-- RELATÓRIO / TABELA GERAL -->
     <div class="card">
         <h2>Relatório de Movimentação Geral</h2>
+        
+        <!-- FILTRO DE AGENDA / DATAS -->
+        <div class="filter-section">
+            <div>
+                <label>Data Inicial (Agenda)</label>
+                <input type="date" id="filtroDataInicio" onchange="renderizar()">
+            </div>
+            <div>
+                <label>Data Final (Agenda)</label>
+                <input type="date" id="filtroDataFim" onchange="renderizar()">
+            </div>
+            <div>
+                <button style="background-color: #64748b;" onclick="limparFiltros()">Limpar Filtros</button>
+            </div>
+        </div>
+
         <table>
             <thead>
                 <tr>
                     <th>Data</th>
                     <th>Conta</th>
-                    <th>Tipo</th>
                     <th>Descrição</th>
                     <th>Valor</th>
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tfoot id="tabela-corpo">
+            <tbody id="tabela-corpo">
                 <!-- Preenchido via JS -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align: right;">Total do Período:</td>
+                    <td id="tabela-total" style="font-size: 16px;">R$ 0.00</td>
+                    <td></td>
+                </tr>
             </tfoot>
         </table>
     </div>
@@ -176,7 +203,6 @@
     function adicionarMovimento() {
         const data = document.getElementById('data').value;
         const conta = document.getElementById('conta').value;
-        const tipo = document.getElementById('tipo').value;
         const valor = parseFloat(document.getElementById('valor').value);
         const descricao = document.getElementById('descricao').value;
 
@@ -185,7 +211,7 @@
             return;
         }
 
-        const novaTransacao = { id: Date.now(), data, conta, tipo, valor, descricao };
+        const novaTransacao = { id: Date.now(), data, conta, valor, descricao };
         transacoes.push(novaTransacao);
         salvarEAtualizar();
         
@@ -196,6 +222,12 @@
     function excluirTransacao(id) {
         transacoes = transacoes.filter(t => t.id !== id);
         salvarEAtualizar();
+    }
+
+    function limparFiltros() {
+        document.getElementById('filtroDataInicio').value = '';
+        document.getElementById('filtroDataFim').value = '';
+        renderizar();
     }
 
     function salvarEAtualizar() {
@@ -217,32 +249,45 @@
             "Dinheiro Saída": 0
         };
 
-        transacoes.sort((a, b) => new Date(b.data) - new Date(a.data));
-
+        // Calcular saldos globais com base em TODAS as transações
         transacoes.forEach(t => {
-            // Lógica de cálculo sem conflito de cartão
-            if (t.tipo === 'Entrada') {
-                saldos[t.conta] += t.valor;
-            } else if (t.tipo === 'Saída') {
-                saldos[t.conta] -= t.valor;
-            } else if (t.tipo === 'Pagamento de Fatura (Transferência)') {
-                // Pagamento de fatura reduz a conta corrente e quita o cartão sem gerar nova despesa
-                saldos[t.conta] -= t.valor;
-            }
+            saldos[t.conta] += t.valor;
+        });
+
+        // Filtrar por data (Agenda)
+        const dataInicio = document.getElementById('filtroDataInicio').value;
+        const dataFim = document.getElementById('filtroDataFim').value;
+
+        let transacoesFiltradas = transacoes.filter(t => {
+            if (dataInicio && t.data < dataInicio) return false;
+            if (dataFim && t.data > dataFim) return false;
+            return true;
+        });
+
+        transacoesFiltradas.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+        let somaTotalPeriodo = 0;
+
+        transacoesFiltradas.forEach(t => {
+            somaTotalPeriodo += t.valor;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${t.data.split('-').reverse().join('/')}</td>
                 <td><strong>${t.conta}</strong></td>
-                <td>${t.tipo}</td>
                 <td>${t.descricao}</td>
-                <td style="color: ${t.tipo === 'Entrada' ? 'var(--success)' : 'var(--danger)'}">
+                <td style="color: ${t.valor >= 0 ? 'var(--success)' : 'var(--danger)'}">
                     R$ ${t.valor.toFixed(2)}
                 </td>
                 <td><button style="background-color: var(--danger); padding: 5px 10px; font-size: 12px;" onclick="excluirTransacao(${t.id})">Excluir</button></td>
             `;
             corpo.appendChild(tr);
         });
+
+        // Atualizar totalizador no rodapé
+        const totalEl = document.getElementById('tabela-total');
+        totalEl.innerText = `R$ ${somaTotalPeriodo.toFixed(2)}`;
+        totalEl.style.color = somaTotalPeriodo >= 0 ? 'var(--success)' : 'var(--danger)';
 
         // Renderizar KPIs por conta
         const kpisDiv = document.getElementById('kpis');
