@@ -36,7 +36,7 @@
         }
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
             margin-bottom: 15px;
         }
@@ -135,8 +135,16 @@
                 </select>
             </div>
             <div>
-                <label>Valor (R$) [Use negativo para saída]</label>
-                <input type="text" inputmode="decimal" id="valor" placeholder="Ex: 150.00 ou -50.00">
+                <label>Tipo de Movimento</label>
+                <select id="tipoMovimento">
+                    <option value="1">Entrada (+)</option>
+                    <option value="-1">Saída (-)</option>
+                </select>
+            </div>
+            <div>
+                <label>Valor (R$)</label>
+                <!-- Retornado para type="number" com step para garantir que o teclado numérico nativo funcione perfeitamente sem travar -->
+                <input type="number" id="valor" step="0.01" placeholder="Ex: 150.00">
             </div>
             <div>
                 <label>Descrição</label>
@@ -212,18 +220,20 @@
     function adicionarMovimento() {
         const data = document.getElementById('data').value;
         const conta = document.getElementById('conta').value;
+        const multiplicador = parseInt(document.getElementById('tipoMovimento').value);
         
-        let valorBruto = document.getElementById('valor').value.trim().replace(',', '.');
-        const valor = parseFloat(valorBruto);
-
+        let valorDigitado = parseFloat(document.getElementById('valor').value);
         const descricao = document.getElementById('descricao').value;
 
-        if (!data || isNaN(valor) || !descricao) {
+        if (!data || isNaN(valorDigitado) || !descricao) {
             alert('Por favor, preencha todos os campos corretamente.');
             return;
         }
 
-        const novaTransacao = { id: Date.now(), data, conta, valor, descricao };
+        // Aplica o sinal positivo ou negativo baseado no seletor de tipo
+        const valorFinal = valorDigitado * multiplicador;
+
+        const novaTransacao = { id: Date.now(), data, conta, valor: valorFinal, descricao };
         transacoes.push(novaTransacao);
         salvarEAtualizar();
         
