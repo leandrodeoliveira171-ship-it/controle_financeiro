@@ -131,8 +131,7 @@
                     <option value="Conta Corrente PF Banco ITI">Conta Corrente PF Banco ITI</option>
                     <option value="Cartão PF Banco Iti">Cartão PF Banco Iti</option>
                     <option value="Conta Itaú PF">Conta Itaú PF</option>
-                    <option value="Dinheiro Entrada">Dinheiro Entrada</option>
-                    <option value="Dinheiro Saída">Dinheiro Saída</option>
+                    <option value="Dinheiro">Dinheiro</option>
                 </select>
             </div>
             <div>
@@ -245,13 +244,16 @@
             "Conta Corrente PF Banco ITI": 0,
             "Cartão PF Banco Iti": 0,
             "Conta Itaú PF": 0,
-            "Dinheiro Entrada": 0,
-            "Dinheiro Saída": 0
+            "Dinheiro": 0
         };
 
         // Calcular saldos globais com base em TODAS as transações
         transacoes.forEach(t => {
-            saldos[t.conta] += t.valor;
+            if (saldos[t.conta] !== undefined) {
+                saldos[t.conta] += t.valor;
+            } else {
+                saldos[t.conta] = t.valor;
+            }
         });
 
         // Filtrar por data (Agenda)
