@@ -108,11 +108,6 @@
             padding: 15px;
             border-radius: 8px;
         }
-        .section-separator {
-            margin-top: 30px;
-            border-top: 2px dashed #cbd5e1;
-            padding-top: 20px;
-        }
     </style>
 </head>
 <body>
@@ -214,9 +209,9 @@
         </table>
     </div>
 
-    <!-- ================= 2. RELATÓRIO: CONTAS PJ ================= -->
+    <!-- ================= 2. RELATÓRIO DE MOVIMENTAÇÃO GERAL (PJ, PF e Dinheiro) ================= -->
     <div class="card">
-        <h2>Relatório de Movimentação - Contas PJ</h2>
+        <h2>Relatório de Movimentação Geral (PJ, PF e Dinheiro)</h2>
         <table>
             <thead>
                 <tr>
@@ -227,89 +222,21 @@
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody id="tabela-pj-corpo"></tbody>
+            <tbody id="tabela-geral-corpo"></tbody>
             <tfoot>
                 <tr>
                     <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
-                    <td id="pj-total-entradas">R$ 0.00</td>
+                    <td id="geral-total-entradas">R$ 0.00</td>
                     <td></td>
                 </tr>
                 <tr>
                     <td colspan="3" style="text-align: right;">Total Saídas do Período:</td>
-                    <td id="pj-total-saidas">R$ 0.00</td>
+                    <td id="geral-total-saidas">R$ 0.00</td>
                     <td></td>
                 </tr>
                 <tr>
                     <td colspan="3" style="text-align: right;">Saldo Líquido do Período:</td>
-                    <td id="pj-total-liquido">R$ 0.00</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-
-    <!-- ================= 3. RELATÓRIO: CONTAS PF ================= -->
-    <div class="card">
-        <h2>Relatório de Movimentação - Contas PF</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Conta</th>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody id="tabela-pf-corpo"></tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
-                    <td id="pf-total-entradas">R$ 0.00</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="text-align: right;">Total Saídas do Período:</td>
-                    <td id="pf-total-saidas">R$ 0.00</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="text-align: right;">Saldo Líquido do Período:</td>
-                    <td id="pf-total-liquido">R$ 0.00</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-
-    <!-- ================= 4. RELATÓRIO: DINHEIRO ================= -->
-    <div class="card">
-        <h2>Relatório de Movimentação - Dinheiro</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>Conta</th>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody id="tabela-dinheiro-corpo"></tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
-                    <td id="dinheiro-total-entradas">R$ 0.00</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="text-align: right;">Total Saídas do Período:</td>
-                    <td id="dinheiro-total-saidas">R$ 0.00</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="text-align: right;">Saldo Líquido do Período:</td>
-                    <td id="dinheiro-total-liquido">R$ 0.00</td>
+                    <td id="geral-total-liquido">R$ 0.00</td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -392,26 +319,20 @@
 
         transacoesFiltradas.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-        // Separar listas por grupo
+        // Separar listas: Cartão x Geral (PJ, PF e Dinheiro)
         let listaCartao = [];
-        let listaPJ = [];
-        let listaPF = [];
-        let listaDinheiro = [];
+        let listaGeral = [];
 
         transacoesFiltradas.forEach(t => {
             const contaLower = t.conta.toLowerCase();
             if (contaLower.includes('cartão')) {
                 listaCartao.push(t);
-            } else if (contaLower.includes('pj')) {
-                listaPJ.push(t);
-            } else if (contaLower.includes('pf') || contaLower.includes('itaú')) {
-                listaPF.push(t);
-            } else if (contaLower.includes('dinheiro')) {
-                listaDinheiro.push(t);
+            } else {
+                listaGeral.push(t); // Conta PJ, Conta PF, Dinheiro
             }
         });
 
-        // Função auxiliar para popular tabela e calcular entradas, saídas e líquidos
+        // Função auxiliar para popular tabela e calcular totais
         function preencherSecao(lista, corpoId, prefixoId) {
             const corpo = document.getElementById(corpoId);
             corpo.innerHTML = '';
@@ -455,9 +376,7 @@
         }
 
         preencherSecao(listaCartao, 'tabela-cartao-corpo', 'cartao');
-        preencherSecao(listaPJ, 'tabela-pj-corpo', 'pj');
-        preencherSecao(listaPF, 'tabela-pf-corpo', 'pf');
-        preencherSecao(listaDinheiro, 'tabela-dinheiro-corpo', 'dinheiro');
+        preencherSecao(listaGeral, 'tabela-geral-corpo', 'geral');
 
         // Renderizar KPIs do topo
         const kpisDiv = document.getElementById('kpis');
