@@ -143,7 +143,8 @@
             </div>
             <div>
                 <label>Valor (R$)</label>
-                <input type="text" id="valor" placeholder="Ex: 199.000.000,88" oninput="mascaraMoeda(this)">
+                <!-- Campo de digitação totalmente livre -->
+                <input type="text" id="valor" placeholder="Ex: 11.000.000,00">
             </div>
             <div>
                 <label>Descrição</label>
@@ -191,8 +192,13 @@
             <tbody id="tabela-cartao-corpo"></tbody>
             <tfoot>
                 <tr>
-                    <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
+                    <td colspan="3" style="text-align: right;">Data Inicial (Agenda) / Data Final (Agenda) / Limpar Filtros</td>
                     <td id="cartao-total-entradas">R$ 0,00</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
+                    <td id="cartao-total-entradas-val">R$ 0,00</td>
                     <td></td>
                 </tr>
                 <tr>
@@ -250,32 +256,6 @@
 
     document.getElementById('data').valueAsDate = new Date();
 
-    // Função para aplicar máscara monetária nos inputs enquanto digita
-    function mascaraMoeda(campo) {
-        let elemento = campo;
-        let valor = elemento.value;
-
-        // Remove tudo que não for dígito
-        valor = valor.replace(/\D/g, "");
-
-        if (valor === "") {
-            elemento.value = "";
-            return;
-        }
-
-        // Converte para número dividindo por 100 para considerar os centavos
-        valor = (parseFloat(valor) / 100).toFixed(2) + "";
-        
-        // Substitui ponto por vírgula para o formato brasileiro
-        valor = valor.replace(".", ",");
-
-        // Adiciona os pontos de milhar
-        valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-        elemento.value = valor;
-    }
-
-    // Função auxiliar para formatar números no padrão brasileiro R$ X.XXX,XX
     function formatarMoedaBR(valor) {
         return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -285,7 +265,7 @@
         const conta = document.getElementById('conta').value;
         const multiplicador = parseInt(document.getElementById('tipoMovimento').value);
         
-        const valorTexto = document.getElementById('valor').value;
+        const valorTexto = document.getElementById('valor').value.trim();
         const descricao = document.getElementById('descricao').value;
 
         if (!data || !valorTexto || !descricao) {
@@ -293,12 +273,12 @@
             return;
         }
 
-        // Converte o texto formatado (ex: "199.000.000,88") de volta para float estruturado para o JS calcular
-        let valorLimpo = valorTexto.replace(/\./g, "").replace(",", ".");
+        // Conversão robusta aceitando pontos de milhar e vírgula de centavos (ex: 11.000.000,00 ou 199.000.000,88)
+        let valorLimpo = valorTexto.replace(/\./g, '').replace(',', '.');
         let valorDigitado = parseFloat(valorLimpo);
 
         if (isNaN(valorDigitado) || valorDigitado <= 0) {
-            alert('Insira um valor válido.');
+            alert('Insira um valor válido. Exemplo: 11.000.000,00');
             return;
         }
 
