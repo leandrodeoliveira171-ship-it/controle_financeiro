@@ -143,7 +143,7 @@
             </div>
             <div>
                 <label>Valor (R$)</label>
-                <input type="number" id="valor" step="0.01" placeholder="Ex: 150.00">
+                <input type="text" id="valor" placeholder="Ex: 199.000.000,88" oninput="mascaraMoeda(this)">
             </div>
             <div>
                 <label>Descrição</label>
@@ -192,17 +192,17 @@
             <tfoot>
                 <tr>
                     <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
-                    <td id="cartao-total-entradas">R$ 0.00</td>
+                    <td id="cartao-total-entradas">R$ 0,00</td>
                     <td></td>
                 </tr>
                 <tr>
                     <td colspan="3" style="text-align: right;">Total Saídas do Período:</td>
-                    <td id="cartao-total-saidas">R$ 0.00</td>
+                    <td id="cartao-total-saidas">R$ 0,00</td>
                     <td></td>
                 </tr>
                 <tr>
                     <td colspan="3" style="text-align: right;">Saldo Líquido do Período:</td>
-                    <td id="cartao-total-liquido">R$ 0.00</td>
+                    <td id="cartao-total-liquido">R$ 0,00</td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -226,17 +226,17 @@
             <tfoot>
                 <tr>
                     <td colspan="3" style="text-align: right;">Total Entradas do Período:</td>
-                    <td id="geral-total-entradas">R$ 0.00</td>
+                    <td id="geral-total-entradas">R$ 0,00</td>
                     <td></td>
                 </tr>
                 <tr>
                     <td colspan="3" style="text-align: right;">Total Saídas do Período:</td>
-                    <td id="geral-total-saidas">R$ 0.00</td>
+                    <td id="geral-total-saidas">R$ 0,00</td>
                     <td></td>
                 </tr>
                 <tr>
                     <td colspan="3" style="text-align: right;">Saldo Líquido do Período:</td>
-                    <td id="geral-total-liquido">R$ 0.00</td>
+                    <td id="geral-total-liquido">R$ 0,00</td>
                     <td></td>
                 </tr>
             </tfoot>
@@ -250,16 +250,55 @@
 
     document.getElementById('data').valueAsDate = new Date();
 
+    // Função para aplicar máscara monetária nos inputs enquanto digita
+    function mascaraMoeda(campo) {
+        let elemento = campo;
+        let valor = elemento.value;
+
+        // Remove tudo que não for dígito
+        valor = valor.replace(/\D/g, "");
+
+        if (valor === "") {
+            elemento.value = "";
+            return;
+        }
+
+        // Converte para número dividindo por 100 para considerar os centavos
+        valor = (parseFloat(valor) / 100).toFixed(2) + "";
+        
+        // Substitui ponto por vírgula para o formato brasileiro
+        valor = valor.replace(".", ",");
+
+        // Adiciona os pontos de milhar
+        valor = valor.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+        elemento.value = valor;
+    }
+
+    // Função auxiliar para formatar números no padrão brasileiro R$ X.XXX,XX
+    function formatarMoedaBR(valor) {
+        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
     function adicionarMovimento() {
         const data = document.getElementById('data').value;
         const conta = document.getElementById('conta').value;
         const multiplicador = parseInt(document.getElementById('tipoMovimento').value);
         
-        let valorDigitado = parseFloat(document.getElementById('valor').value);
+        const valorTexto = document.getElementById('valor').value;
         const descricao = document.getElementById('descricao').value;
 
-        if (!data || isNaN(valorDigitado) || !descricao) {
+        if (!data || !valorTexto || !descricao) {
             alert('Por favor, preencha todos os campos corretamente.');
+            return;
+        }
+
+        // Converte o texto formatado (ex: "199.000.000,88") de volta para float estruturado para o JS calcular
+        let valorLimpo = valorTexto.replace(/\./g, "").replace(",", ".");
+        let valorDigitado = parseFloat(valorLimpo);
+
+        if (isNaN(valorDigitado) || valorDigitado <= 0) {
+            alert('Insira um valor válido.');
             return;
         }
 
@@ -319,7 +358,6 @@
 
         transacoesFiltradas.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-        // Separar listas: Cartão x Geral (PJ, PF e Dinheiro)
         let listaCartao = [];
         let listaGeral = [];
 
@@ -328,11 +366,10 @@
             if (contaLower.includes('cartão')) {
                 listaCartao.push(t);
             } else {
-                listaGeral.push(t); // Conta PJ, Conta PF, Dinheiro
+                listaGeral.push(t);
             }
         });
 
-        // Função auxiliar para popular tabela e calcular totais
         function preencherSecao(lista, corpoId, prefixoId) {
             const corpo = document.getElementById(corpoId);
             corpo.innerHTML = '';
@@ -344,7 +381,7 @@
                 if (t.valor >= 0) {
                     entradas += t.valor;
                 } else {
-                    saidas += t.valor; // Armazena como negativo
+                    saidas += t.valor;
                 }
 
                 const tr = document.createElement('tr');
@@ -353,7 +390,7 @@
                     <td><strong>${t.conta}</strong></td>
                     <td>${t.descricao}</td>
                     <td style="color: ${t.valor >= 0 ? 'var(--success)' : 'var(--danger)'}">
-                        R$ ${t.valor.toFixed(2)}
+                        ${formatarMoedaBR(t.valor)}
                     </td>
                     <td><button style="background-color: var(--danger); padding: 5px 10px; font-size: 12px;" onclick="excluirTransacao(${t.id})">Excluir</button></td>
                 `;
@@ -363,15 +400,15 @@
             const liquido = entradas + saidas;
 
             const elEntradas = document.getElementById(`${prefixoId}-total-entradas`);
-            elEntradas.innerText = `R$ ${entradas.toFixed(2)}`;
+            elEntradas.innerText = formatarMoedaBR(entradas);
             elEntradas.style.color = 'var(--success)';
 
             const elSaidas = document.getElementById(`${prefixoId}-total-saidas`);
-            elSaidas.innerText = `R$ ${Math.abs(saidas).toFixed(2)}`;
+            elSaidas.innerText = formatarMoedaBR(Math.abs(saidas));
             elSaidas.style.color = 'var(--danger)';
 
             const elLiquido = document.getElementById(`${prefixoId}-total-liquido`);
-            elLiquido.innerText = `R$ ${liquido.toFixed(2)}`;
+            elLiquido.innerText = formatarMoedaBR(liquido);
             elLiquido.style.color = liquido >= 0 ? 'var(--success)' : 'var(--danger)';
         }
 
@@ -386,7 +423,7 @@
                 <div class="kpi-card">
                     <div class="kpi-title">${conta}</div>
                     <div class="kpi-value" style="color: ${saldo >= 0 ? 'var(--text)' : 'var(--danger)'}">
-                        R$ ${saldo.toFixed(2)}
+                        ${formatarMoedaBR(saldo)}
                     </div>
                 </div>
             `;
